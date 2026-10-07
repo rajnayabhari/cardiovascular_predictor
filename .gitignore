@@ -1,0 +1,26 @@
+# Python Virtual Environments
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Datasets (Never push raw data to GitHub)
+cardio_train.csv
+*.csv
+
+# Trained Machine Learning Models (These are generated locally)
+*.pkl
+rf_model.pkl
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
