@@ -21,13 +21,18 @@ class CardioETLPipeline:
         # 1. Feature Engineering: Convert age from days to years
         df['age'] = (df['age'] / 365.25).round().astype(int)
         
-        # 2. Outlier Removal: Filter biological impossibilities in Blood Pressure
+        # 2. Outlier Removal: Strict Data Cleaning (Biological Impossibilities)
         bp_condition = (
-            (df['ap_hi'] >= 90) & (df['ap_hi'] <= 250) &
-            (df['ap_lo'] >= 60) & (df['ap_lo'] <= 150) &
+            (df['ap_hi'] >= 60) & (df['ap_hi'] <= 250) &
+            (df['ap_lo'] >= 40) & (df['ap_lo'] <= 180) &
             (df['ap_hi'] > df['ap_lo'])
         )
-        df = df[bp_condition]
+        df = df[bp_condition].copy()
+        
+        # 3. Clinical Feature Engineering
+        df['bmi'] = (df['weight'] / ((df['height'] / 100) ** 2)).round(2)
+        df['pulse_pressure'] = df['ap_hi'] - df['ap_lo']
+        df['map'] = ((df['ap_hi'] + 2 * df['ap_lo']) / 3).round(2)
         
         # Drop the 'id' column as it has no predictive value
         if 'id' in df.columns:
