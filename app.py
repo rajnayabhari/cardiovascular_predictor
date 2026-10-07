@@ -200,3 +200,55 @@ with tab2:
                 st.info("📉 **Improvement shown**, but patient remains at risk. Consider further interventions.")
             else:
                 st.warning("No significant change in risk profile.")
+
+# --- TAB 3: HOSPITAL BULK PROCESSING ---
+with tab3:
+    st.subheader("📊 Hospital Bulk Patient Processing")
+    st.write("Upload a CSV file containing multiple patient records. The AI will process all patients simultaneously and generate a triage report.")
+    
+    # File uploader
+    uploaded_file = st.file_uploader("Upload Patient Data (CSV)", type=['csv'])
+    
+    if uploaded_file is not None:
+        try:
+            # Read the uploaded CSV
+            bulk_df = pd.read_csv(uploaded_file)
+            st.success(f"Successfully loaded {len(bulk_df)} patient records.")
+            
+            # Ensure the required columns exist for the model
+            required_cols = ['age', 'gender', 'height', 'weight', 'ap_hi', 'ap_lo', 'cholesterol', 'gluc', 'smoke', 'alco', 'active']
+            
+            if not all(col in bulk_df.columns for col in required_cols):
+                st.error(f"Missing required columns! Your CSV must contain exactly these columns: {', '.join(required_cols)}")
+            else:
+                with st.spinner("AI is analyzing patient records..."):
+                    # Extract only the required features in the correct order
+                    X_bulk = bulk_df[required_cols]
+                    
+                    # Run predictions
+                    probabilities = model.predict_proba(X_bulk)[:, 1]
+                    
+                    # Apply our custom 0.40 medical threshold
+                    diagnoses = ["High/Moderate Risk (Consult Doctor)" if p >= 0.40 else "Low Risk" for p in probabilities]
+                    
+                    # Append new columns to the dataframe
+                    result_df = bulk_df.copy()
+                    result_df['Risk_Probability'] = (probabilities * 100).round(1).astype(str) + "%"
+                    result_df['AI_Diagnosis'] = diagnoses
+                    
+                    st.write("### 📝 AI Triage Preview")
+                    st.write("Here is a preview of the first 50 patients processed by the model:")
+                    st.dataframe(result_df.head(50))
+                    
+                    # Convert dataframe to CSV for download
+                    csv_export = result_df.to_csv(index=False).encode('utf-8')
+                    
+                    st.download_button(
+                        label="📥 Download Full Triage Report (CSV)",
+                        data=csv_export,
+                        file_name='ai_triage_results.csv',
+                        mime='text/csv',
+                        type="primary"
+                    )
+        except Exception as e:
+            st.error(f"Error processing file: {e}")
